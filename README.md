@@ -5,9 +5,15 @@
 
 ### To install SDKMAN, JAVA, MAVEN, and SPRING-CLI
 ```
-curl -o script.sh https://raw.githubusercontent.com/joshuasalcedo-dev/wsl-init.sh/refs/heads/main/script.sh
-# Make it executable
-chmod +x script.sh
+# Create the .scripts directory if it doesn't exist
+mkdir -p ~/.scripts
+
+# Download the script into the .scripts directory
+curl -o ~/.scripts/install-java.sh https://raw.githubusercontent.com/joshuasalcedo-template/bash-script/refs/heads/main/java/install-java.sh
+
+# Make the script executable
+chmod +x ~/.scripts/install-java.sh
+
 # Run the installer
-./script.sh
+~/.scripts/install-java.sh
 ```
