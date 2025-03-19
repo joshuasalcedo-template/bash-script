@@ -6,7 +6,6 @@ $downloads = @{
     "openjfx-24" = "https://download.java.net/java/GA/javafx24/bde9f846c551418e80e98679ef280c36/29/openjfx-24_windows-x64_bin-sdk.zip"
     "openjdk-23" = "https://download.java.net/java/GA/javafx23.0.2/512f2f157741485abda37a0a95f69984//3/openjfx-23.0.2_windows-x64_bin-sdk.zip"
     "maven" = "https://dlcdn.apache.org/maven/maven-3/3.9.9/source/apache-maven-3.9.9-src.zip"
-    "jetbrains-toolbox" = "https://www.jetbrains.com/toolbox-app/download/download-thanks.html?platform=windows"
 }
 
 # Iterate over the hashtable and download each file
@@ -33,4 +32,21 @@ foreach ($name in $downloads.Keys) {
     # Unzip the file to the specified directory
     Write-Output "Extracting $name to $extractPath"
     Expand-Archive -Path $output -DestinationPath $extractPath
+
+    # Add the path to the environment variables
+    Write-Output "Adding $extractPath to environment variables"
+    [System.Environment]::SetEnvironmentVariable("Path", $env:Path + ";$extractPath", [System.EnvironmentVariableTarget]::Machine)
 }
+
+# Set JAVA_HOME to Java 17
+$javaHome = "C:\Program Files\Java\openjdk-17"
+Write-Output "Setting JAVA_HOME to $javaHome"
+[System.Environment]::SetEnvironmentVariable("JAVA_HOME", $javaHome, [System.EnvironmentVariableTarget]::Machine)
+
+# Set MAVEN_HOME to Maven
+$mavenHome = "C:\Program Files\Maven"
+Write-Output "Setting MAVEN_HOME to $mavenHome"
+[System.Environment]::SetEnvironmentVariable("MAVEN_HOME", $mavenHome, [System.EnvironmentVariableTarget]::Machine)
+
+# Refresh the environment variables
+$env:Path = [System.Environment]::GetEnvironmentVariable("Path", [System.EnvironmentVariableTarget]::Machine)
