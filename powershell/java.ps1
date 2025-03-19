@@ -1,3 +1,5 @@
+Add-Type -AssemblyName System.IO.Compression.FileSystem
+
 # Define a hashtable to map names to download links
 $downloads = @{
     "openjdk-17" = "https://download.java.net/openjdk/jdk17.0.0.1/ri/openjdk-17.0.0.1+2_windows-x64_bin.zip"
@@ -6,6 +8,7 @@ $downloads = @{
     "openjfx-24" = "https://download.java.net/java/GA/javafx24/bde9f846c551418e80e98679ef280c36/29/openjfx-24_windows-x64_bin-sdk.zip"
     "openjdk-23" = "https://download.java.net/java/GA/javafx23.0.2/512f2f157741485abda37a0a95f69984//3/openjfx-23.0.2_windows-x64_bin-sdk.zip"
     "maven" = "https://dlcdn.apache.org/maven/maven-3/3.9.9/source/apache-maven-3.9.9-src.zip"
+
 }
 
 # Iterate over the hashtable and download each file
@@ -13,7 +16,7 @@ foreach ($name in $downloads.Keys) {
     $url = $downloads[$name]
     $output = "$name.zip"
     Write-Output "Downloading $name from $url"
-    Invoke-WebRequest -Uri $url -OutFile $output
+    Invoke-WebRequest -Uri $url -OutFile $output -Force
 
     # Determine the extraction path based on the name
     if ($name -like "openjdk*" -or $name -like "openjfx*") {
@@ -29,9 +32,12 @@ foreach ($name in $downloads.Keys) {
         New-Item -ItemType Directory -Path $extractPath
     }
 
-    # Unzip the file to the specified directory
+    # Unzip the file to the specified directory and overwrite if it exists
     Write-Output "Extracting $name to $extractPath"
-    Expand-Archive -Path $output -DestinationPath $extractPath
+    if (Test-Path -Path $extractPath) {
+        Remove-Item -Path $extractPath -Recurse -Force
+    }
+    [System.IO.Compression.ZipFile]::ExtractToDirectory($output, $extractPath)
 
     # Add the path to the environment variables
     Write-Output "Adding $extractPath to environment variables"
