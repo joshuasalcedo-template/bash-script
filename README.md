@@ -27,29 +27,42 @@ chmod +x ~/.scripts/intellij.sh
 ~/.scripts/intellij.sh
 ```
 
-## Windows PowerShell Script
+## Windows Installation
 
-### To install Java, JavaFX, Maven, and IntelliJ Toolbox
+### Using winget to install Java development tools
+```powershell
+# Run these commands in PowerShell (Administrator)
+
+# Install OpenJDK 17 (LTS)
+winget install -e --id EclipseAdoptium.Temurin.17.JDK
+
+# Install OpenJDK 21 (LTS)
+winget install -e --id EclipseAdoptium.Temurin.21.JDK
+
+# Install Maven
+winget install -e --id Apache.Maven
+
+# Install IntelliJ Toolbox
+winget install -e --id JetBrains.Toolbox
+
+# Verify installations
+java --version
+mvn --version
+```
+
+### To download and run our custom Java setup script
 ```powershell
 # Create a directory for scripts if it doesn't exist
 $scriptDir = "$env:USERPROFILE\JavaScripts"
 New-Item -Path $scriptDir -ItemType Directory -Force
 
-# Download the PowerShell script
-$scriptUrl = "https://raw.githubusercontent.com/joshuasalcedo-template/bash-script/main/java/powershell/java-setup.ps1"
-$scriptPath = "$scriptDir\java-setup.ps1"
+# Download the script into the scripts directory
+$scriptUrl = "https://raw.githubusercontent.com/joshuasalcedo-template/bash-script/refs/heads/main/java/powershell/java.ps1"
+$scriptPath = "$scriptDir\java.ps1"
 Invoke-WebRequest -Uri $scriptUrl -OutFile $scriptPath
 
-# Run the script with admin privileges (requires right-click and "Run as Administrator")
-Write-Host "Script downloaded to: $scriptPath"
-Write-Host "Right-click on the script in Windows Explorer and select 'Run with PowerShell as Administrator' to execute it"
-```
-
-Alternatively, to download and run in one step (requires running PowerShell as Administrator):
-```powershell
-# Run script directly (PowerShell must be started as Administrator)
-Set-ExecutionPolicy Bypass -Scope Process -Force
-Invoke-Expression ((New-Object System.Net.WebClient).DownloadString('https://raw.githubusercontent.com/joshuasalcedo-template/bash-script/main/java/powershell/java-setup.ps1'))
+# Run the script with admin privileges
+Start-Process powershell -ArgumentList "-ExecutionPolicy Bypass -File `"$scriptPath`"" -Verb RunAs
 ```
 
 ## Features
