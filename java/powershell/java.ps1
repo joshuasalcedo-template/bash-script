@@ -1,6 +1,17 @@
 # PowerShell script to download and install Java, JavaFX, Maven, and IntelliJ Toolbox
 # Run as Administrator for best results
 
+# Check if winget is available
+$useWinget = $false
+try {
+    $wingetVersion = (winget --version) 2>$null
+    $useWinget = $true
+    Write-Host "Found winget package manager: $wingetVersion" -ForegroundColor Green
+}
+catch {
+    Write-Host "Winget package manager not found. Will use direct downloads instead." -ForegroundColor Yellow
+}
+
 # Display banner
 Write-Host @"
    _______          **      **_____          __         
@@ -225,9 +236,80 @@ function Extract-TarGzFile {
     }
 }
 
+# Install software using winget if available
+function Install-SoftwareWithWinget {
+    Write-Host "`n[Installing Software with winget]" -ForegroundColor Cyan
+    
+    # Maps to store installation paths
+    $JavaJDKPaths = @{}
+    $JavaFXPaths = @{}
+    $MavenPath = ""
+    
+    # Install JDKs
+    try {
+        # Install OpenJDK 17
+        Write-Host "Installing OpenJDK 17 with winget..." -ForegroundColor Yellow
+        winget install -e --id EclipseAdoptium.Temurin.17.JDK --accept-source-agreements --accept-package-agreements
+        $jdk17Path = "$env:ProgramFiles\Eclipse Adoptium\jdk-17.*"
+        $jdk17Dir = Get-Item -Path $jdk17Path -ErrorAction SilentlyContinue
+        if ($jdk17Dir) {
+            $JavaJDKPaths["17"] = $jdk17Dir.FullName
+            Write-Host "Installed OpenJDK 17 to $($jdk17Dir.FullName)" -ForegroundColor Green
+        }
+        
+        # Install OpenJDK 21
+        Write-Host "Installing OpenJDK 21 with winget..." -ForegroundColor Yellow
+        winget install -e --id EclipseAdoptium.Temurin.21.JDK --accept-source-agreements --accept-package-agreements
+        $jdk21Path = "$env:ProgramFiles\Eclipse Adoptium\jdk-21.*"
+        $jdk21Dir = Get-Item -Path $jdk21Path -ErrorAction SilentlyContinue
+        if ($jdk21Dir) {
+            $JavaJDKPaths["21"] = $jdk21Dir.FullName
+            Write-Host "Installed OpenJDK 21 to $($jdk21Dir.FullName)" -ForegroundColor Green
+        }
+    } catch {
+        Write-Host "Error installing JDKs with winget: $_" -ForegroundColor Red
+    }
+    
+    # Install Maven
+    try {
+        Write-Host "Installing Maven with winget..." -ForegroundColor Yellow
+        winget install -e --id Apache.Maven --accept-source-agreements --accept-package-agreements
+        # Maven is typically installed to a location that should be in PATH already
+        $MavenPath = "C:\Program Files\apache-maven-*"
+        $mavenDir = Get-Item -Path $MavenPath -ErrorAction SilentlyContinue
+        if ($mavenDir) {
+            $MavenPath = $mavenDir.FullName
+            Write-Host "Installed Maven to $MavenPath" -ForegroundColor Green
+        }
+    } catch {
+        Write-Host "Error installing Maven with winget: $_" -ForegroundColor Red
+    }
+    
+    # Install IntelliJ Toolbox
+    try {
+        Write-Host "Installing IntelliJ Toolbox with winget..." -ForegroundColor Yellow
+        winget install -e --id JetBrains.Toolbox --accept-source-agreements --accept-package-agreements
+        Write-Host "Installed IntelliJ Toolbox" -ForegroundColor Green
+    } catch {
+        Write-Host "Error installing IntelliJ Toolbox with winget: $_" -ForegroundColor Red
+    }
+    
+    # Return the installation paths
+    return @{
+        JavaJDKPaths = $JavaJDKPaths
+        JavaFXPaths = $JavaFXPaths
+        MavenPath = $MavenPath
+    }
+}
+
 # Install all the downloaded software
 function Install-Software {
     Write-Host "`n[Installing Software]" -ForegroundColor Cyan
+    
+    # If winget is available, use it
+    if ($useWinget) {
+        return Install-SoftwareWithWinget
+    }
     
     # Maps to store installation paths
     $JavaJDKPaths = @{}
@@ -584,7 +666,8 @@ function Display-Summary {
 # Main script execution
 function Main {
     param (
-        [switch]$RemoveDownloads = $false
+        [switch]$RemoveDownloads = $false,
+        [switch]$UseWinget = $false
     )
     
     Write-Host "Java Development Environment Setup" -ForegroundColor Green
@@ -600,16 +683,38 @@ function Main {
         }
     }
     
-    # Execute all functions in sequence
-    Create-Directories
-    Ensure-7Zip
-    Download-Files
-    $InstallPaths = Install-Software
-    Setup-EnvironmentVariables -InstallPaths $InstallPaths
-    Verify-Installations -InstallPaths $InstallPaths
-    Display-Summary -InstallPaths $InstallPaths
-    Cleanup -RemoveDownloads:$RemoveDownloads
+    # Use winget if explicitly requested or if it was detected earlier
+    $global:useWinget = $UseWinget -or $useWinget
+    
+    if ($global:useWinget) {
+        Write-Host "Using winget package manager for installations" -ForegroundColor Green
+        
+        # Execute functions for winget installation path
+        Create-Directories
+        $InstallPaths = Install-Software  # This will call Install-SoftwareWithWinget when $useWinget is true
+        Setup-EnvironmentVariables -InstallPaths $InstallPaths
+        Verify-Installations -InstallPaths $InstallPaths
+        Display-Summary -InstallPaths $InstallPaths
+    } else {
+        Write-Host "Using direct downloads for installations" -ForegroundColor Yellow
+        
+        # Execute all functions in sequence for the standard installation path
+        Create-Directories
+        Ensure-7Zip
+        Download-Files
+        $InstallPaths = Install-Software
+        Setup-EnvironmentVariables -InstallPaths $InstallPaths
+        Verify-Installations -InstallPaths $InstallPaths
+        Display-Summary -InstallPaths $InstallPaths
+        Cleanup -RemoveDownloads:$RemoveDownloads
+    }
 }
 
-# Run the main function (set to $true to remove downloads after installation)
-Main -RemoveDownloads:$fals
+# Check for command line parameters
+param (
+    [switch]$RemoveDownloads = $false,
+    [switch]$UseWinget = $false
+)
+
+# Run the main function with parameters
+Main -RemoveDownloads:$RemoveDownloads -UseWinget:$UseWinget
